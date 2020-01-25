@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-RND = np.random.RandomState(None)
+rnd = np.random.RandomState(None)
 cv2.setNumThreads(0)  # pytorch issue 1355: possible deadlock in dataloader
 
 
@@ -9,7 +9,7 @@ def get_random_color(background_color):
     """ Output a random scalar in grayscale with a least a small
         contrast with the background color """
 
-    color = RND.randint(256)
+    color = rnd.randint(256)
 
     if abs(color - background_color) < 30:  # not enough contrast
         color = (color + 128) % 256
@@ -32,12 +32,12 @@ def get_different_color(previous_colors, min_dist=50, max_count=20):
                 the previous colors must be at least min_dist
       max_count: maximal number of iterations
     """
-    color = RND.randint(256)
+    color = rnd.randint(256)
     count = 0
 
     while np.any(np.abs(previous_colors - color) < min_dist) and count < max_count:
         count += 1
-        color = RND.randint(256)
+        color = rnd.randint(256)
 
     return color
 
@@ -64,20 +64,20 @@ class Lines:
 
             return np.any((ccw(a, c, d, dim) != ccw(b, c, d, dim)) & (ccw(a, b, c, dim) != ccw(a, b, d, dim)))
 
-        num_lines = RND.randint(1, nb_lines)
+        num_lines = rnd.randint(1, nb_lines)
         segments = np.empty((0, 4), dtype=np.int)
         points = np.empty((0, 2), dtype=np.int)
         background_color = int(np.mean(image))
         min_dim = min(image.shape)
 
         for i in range(num_lines):
-            x1 = RND.randint(image.shape[1])
-            y1 = RND.randint(image.shape[0])
+            x1 = rnd.randint(image.shape[1])
+            y1 = rnd.randint(image.shape[0])
 
             p1 = np.array([[x1, y1]])
 
-            x2 = RND.randint(image.shape[1])
-            y2 = RND.randint(image.shape[0])
+            x2 = rnd.randint(image.shape[1])
+            y2 = rnd.randint(image.shape[0])
 
             p2 = np.array([[x2, y2]])
 
@@ -88,7 +88,7 @@ class Lines:
             segments = np.concatenate([segments, np.array([[x1, y1, x2, y2]])], axis=0)
 
             col = get_random_color(background_color)
-            thickness = RND.randint(min_dim * 0.01, min_dim * 0.02)
+            thickness = rnd.randint(min_dim * 0.01, min_dim * 0.02)
 
             cv2.line(image, (x1, y1), (x2, y2), col, thickness)
             points = np.concatenate([points, np.array([[x1, y1], [x2, y2]])], axis=0)
@@ -109,19 +109,19 @@ class Polygon:
 
             return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
 
-        num_corners = RND.randint(3, max_sides)
+        num_corners = rnd.randint(3, max_sides)
         min_dim = min(image.shape[0], image.shape[1])
-        rad = max(RND.rand() * min_dim / 2, min_dim / 10)
+        rad = max(rnd.rand() * min_dim / 2, min_dim / 10)
 
-        x = RND.randint(rad, image.shape[1] - rad)  # Center of a circle
-        y = RND.randint(rad, image.shape[0] - rad)
+        x = rnd.randint(rad, image.shape[1] - rad)  # Center of a circle
+        y = rnd.randint(rad, image.shape[0] - rad)
 
         # Sample num_corners points inside the circle
         slices = np.linspace(0, 2 * np.pi, num_corners + 1)
-        angles = [slices[i] + RND.rand() * (slices[i + 1] - slices[i]) for i in range(num_corners)]
+        angles = [slices[i] + rnd.rand() * (slices[i + 1] - slices[i]) for i in range(num_corners)]
 
-        points = np.array([[int(x + max(RND.rand(), 0.4) * rad * np.cos(a)),
-                            int(y + max(RND.rand(), 0.4) * rad * np.sin(a))] for a in angles])
+        points = np.array([[int(x + max(rnd.rand(), 0.4) * rad * np.cos(a)),
+                            int(y + max(rnd.rand(), 0.4) * rad * np.sin(a))] for a in angles])
 
         # Filter the points that are too close or that have an angle too flat
         norms = [np.linalg.norm(points[(i - 1) % num_corners, :] - points[i, :]) for i in range(num_corners)]
@@ -161,13 +161,13 @@ class Ellipses:
         background_color = int(np.mean(image))
 
         for i in range(nb_ellipses):
-            ax = int(max(RND.rand() * min_dim, min_dim / 5))
-            ay = int(max(RND.rand() * min_dim, min_dim / 5))
+            ax = int(max(rnd.rand() * min_dim, min_dim / 5))
+            ay = int(max(rnd.rand() * min_dim, min_dim / 5))
 
             max_rad = max(ax, ay)
 
-            x = RND.randint(max_rad, image.shape[1] - max_rad)  # center
-            y = RND.randint(max_rad, image.shape[0] - max_rad)
+            x = rnd.randint(max_rad, image.shape[1] - max_rad)  # center
+            y = rnd.randint(max_rad, image.shape[0] - max_rad)
 
             new_center = np.array([[x, y]])
 
@@ -181,7 +181,7 @@ class Ellipses:
             rads = np.concatenate([rads, np.array([[max_rad]])], axis=0)
 
             col = get_random_color(background_color)
-            angle = RND.rand() * 90
+            angle = rnd.rand() * 90
 
             cv2.ellipse(image, (x, y), (ax, ay), angle, 0, 360, col, -1)
 
@@ -194,21 +194,21 @@ class Star:
     """
 
     def __call__(self, image, nb_branches=6):
-        num_branches = RND.randint(3, nb_branches)
+        num_branches = rnd.randint(3, nb_branches)
         min_dim = min(image.shape[0], image.shape[1])
 
-        thickness = RND.randint(min_dim * 0.01, min_dim * 0.02)
-        rad = max(RND.rand() * min_dim / 2, min_dim / 5)
+        thickness = rnd.randint(min_dim * 0.01, min_dim * 0.02)
+        rad = max(rnd.rand() * min_dim / 2, min_dim / 5)
 
-        x = RND.randint(rad, image.shape[1] - rad)  # select the center of a circle
-        y = RND.randint(rad, image.shape[0] - rad)
+        x = rnd.randint(rad, image.shape[1] - rad)  # select the center of a circle
+        y = rnd.randint(rad, image.shape[0] - rad)
 
         # Sample num_branches points inside the circle
         slices = np.linspace(0, 2 * np.pi, num_branches + 1)
-        angles = [slices[i] + RND.rand() * (slices[i + 1] - slices[i]) for i in range(num_branches)]
+        angles = [slices[i] + rnd.rand() * (slices[i + 1] - slices[i]) for i in range(num_branches)]
 
-        points = np.array([[int(x + max(RND.rand(), 0.3) * rad * np.cos(a)),
-                            int(y + max(RND.rand(), 0.3) * rad * np.sin(a))] for a in angles])
+        points = np.array([[int(x + max(rnd.rand(), 0.3) * rad * np.cos(a)),
+                            int(y + max(rnd.rand(), 0.3) * rad * np.sin(a))] for a in angles])
 
         points = np.concatenate(([[x, y]], points), axis=0)
         background_color = int(np.mean(image))
@@ -232,9 +232,9 @@ class Stripes:
         background_color = int(np.mean(image))
 
         # Create the grid
-        board_size = (int(image.shape[0] * (1 + RND.rand())), int(image.shape[1] * (1 + RND.rand())))
-        col = RND.randint(5, max_nb_cols)  # number of cols
-        cols = np.concatenate([board_size[1] * RND.rand(col - 1), np.array([0, board_size[1] - 1])], axis=0)
+        board_size = (int(image.shape[0] * (1 + rnd.rand())), int(image.shape[1] * (1 + rnd.rand())))
+        col = rnd.randint(5, max_nb_cols)  # number of cols
+        cols = np.concatenate([board_size[1] * rnd.rand(col - 1), np.array([0, board_size[1] - 1])], axis=0)
         cols = np.unique(cols.astype(int))
 
         # Remove the indices that are too close
@@ -253,7 +253,7 @@ class Stripes:
         # The parameters of the transformations are constrained
         # to get transformations not too far-fetched
         # Prepare the matrices
-        alpha_affine = np.max(image.shape) * (transform_params[0] + RND.rand() * transform_params[1])
+        alpha_affine = np.max(image.shape) * (transform_params[0] + rnd.rand() * transform_params[1])
         center_square = np.float32(image.shape) // 2
         square_size = min(image.shape) // 3
 
@@ -261,10 +261,10 @@ class Stripes:
             [center_square + square_size, [center_square[0] + square_size, center_square[1] - square_size],
              center_square - square_size, [center_square[0] - square_size, center_square[1] + square_size]])
 
-        pts2 = pts1 + RND.uniform(-alpha_affine, alpha_affine, size=pts1.shape).astype(np.float32)
+        pts2 = pts1 + rnd.uniform(-alpha_affine, alpha_affine, size=pts1.shape).astype(np.float32)
         affine_transform = cv2.getAffineTransform(pts1[:3], pts2[:3])
 
-        pts2 = pts1 + RND.uniform(-alpha_affine / 2, alpha_affine / 2, size=pts1.shape).astype(np.float32)
+        pts2 = pts1 + rnd.uniform(-alpha_affine / 2, alpha_affine / 2, size=pts1.shape).astype(np.float32)
         transform = cv2.getPerspectiveTransform(pts1, pts2)
 
         # Apply the affine transformation
@@ -286,22 +286,22 @@ class Stripes:
         color = get_random_color(background_color)
 
         for i in range(col):
-            color = (color + 128 + RND.randint(-30, 30)) % 256
+            color = (color + 128 + rnd.randint(-30, 30)) % 256
             cv2.fillConvexPoly(image, np.array([(warp_points[i, 0], warp_points[i, 1]),
                                                 (warp_points[i + 1, 0], warp_points[i + 1, 1]),
                                                 (warp_points[i + col + 2, 0], warp_points[i + col + 2, 1]),
                                                 (warp_points[i + col + 1, 0], warp_points[i + col + 1, 1])]), color)
 
         # Draw lines on the boundaries of the stripes at random
-        nb_rows = RND.randint(2, 5)
-        nb_cols = RND.randint(2, col + 2)
+        nb_rows = rnd.randint(2, 5)
+        nb_cols = rnd.randint(2, col + 2)
 
-        thickness = RND.randint(min_dim * 0.01, min_dim * 0.015)
+        thickness = rnd.randint(min_dim * 0.01, min_dim * 0.015)
 
         for _ in range(nb_rows):
-            row_idx = RND.choice([0, col + 1])
-            col_idx1 = RND.randint(col + 1)
-            col_idx2 = RND.randint(col + 1)
+            row_idx = rnd.choice([0, col + 1])
+            col_idx1 = rnd.randint(col + 1)
+            col_idx2 = rnd.randint(col + 1)
             color = get_random_color(background_color)
 
             cv2.line(image,
@@ -310,7 +310,7 @@ class Stripes:
                      color, thickness)
 
         for _ in range(nb_cols):
-            col_idx = RND.randint(col + 1)
+            col_idx = rnd.randint(col + 1)
             color = get_random_color(background_color)
 
             cv2.line(image,
@@ -347,9 +347,9 @@ class Cube:
         min_dim = min(image.shape[:2])
         min_side = min_dim * min_size_ratio
 
-        lx = min_side + RND.rand() * 2 * min_dim / 3  # dimensions of the cube
-        ly = min_side + RND.rand() * 2 * min_dim / 3
-        lz = min_side + RND.rand() * 2 * min_dim / 3
+        lx = min_side + rnd.rand() * 2 * min_dim / 3  # dimensions of the cube
+        ly = min_side + rnd.rand() * 2 * min_dim / 3
+        lz = min_side + rnd.rand() * 2 * min_dim / 3
 
         cube = np.array([[0, 0, 0],
                          [lx, 0, 0],
@@ -360,7 +360,7 @@ class Cube:
                          [0, ly, lz],
                          [lx, ly, lz]])
 
-        rot_angles = RND.rand(3) * 3 * np.pi / 10. + np.pi / 10.
+        rot_angles = rnd.rand(3) * 3 * np.pi / 10. + np.pi / 10.
 
         rotation_1 = np.array([[np.cos(rot_angles[0]), -np.sin(rot_angles[0]), 0],
                                [np.sin(rot_angles[0]), np.cos(rot_angles[0]), 0],
@@ -374,13 +374,13 @@ class Cube:
                                [0, 1, 0],
                                [np.sin(rot_angles[2]), 0, np.cos(rot_angles[2])]])
 
-        scaling = np.array([[scale_interval[0] + RND.rand() * scale_interval[1], 0, 0],
-                            [0, scale_interval[0] + RND.rand() * scale_interval[1], 0],
-                            [0, 0, scale_interval[0] + RND.rand() * scale_interval[1]]])
+        scaling = np.array([[scale_interval[0] + rnd.rand() * scale_interval[1], 0, 0],
+                            [0, scale_interval[0] + rnd.rand() * scale_interval[1], 0],
+                            [0, 0, scale_interval[0] + rnd.rand() * scale_interval[1]]])
 
-        trans = np.array([image.shape[1] * trans_interval[0] + RND.randint(-image.shape[1] * trans_interval[1],
+        trans = np.array([image.shape[1] * trans_interval[0] + rnd.randint(-image.shape[1] * trans_interval[1],
                                                                            image.shape[1] * trans_interval[1]),
-                          image.shape[0] * trans_interval[0] + RND.randint(-image.shape[0] * trans_interval[1],
+                          image.shape[0] * trans_interval[0] + rnd.randint(-image.shape[0] * trans_interval[1],
                                                                            image.shape[0] * trans_interval[1]), 0])
 
         cube = trans + np.transpose(
@@ -402,11 +402,11 @@ class Cube:
         for i in [0, 1, 2]:
             cv2.fillPoly(image, [cube[faces[i]].reshape((-1, 1, 2))], col_face)
 
-        thickness = RND.randint(min_dim * 0.003, min_dim * 0.015)
+        thickness = rnd.randint(min_dim * 0.003, min_dim * 0.015)
 
         for i in [0, 1, 2]:
             for j in [0, 1, 2, 3]:
-                col_edge = (col_face + 128 + RND.randint(-64, 64)) % 256  # color that constrats with the face color
+                col_edge = (col_face + 128 + rnd.randint(-64, 64)) % 256  # color that constrats with the face color
                 cv2.line(image,
                          (cube[faces[i][j], 0], cube[faces[i][j], 1]),
                          (cube[faces[i][(j + 1) % 4], 0], cube[faces[i][(j + 1) % 4], 1]), col_edge, thickness)
@@ -428,8 +428,8 @@ class Checkerboard:
     def __call__(self, image, max_rows=7, max_cols=7, transform_params=(0.05, 0.15)):
         background_color = int(np.mean(image))
         # Create the grid
-        rows = RND.randint(3, max_rows)  # number of rows
-        cols = RND.randint(3, max_cols)  # number of cols
+        rows = rnd.randint(3, max_rows)  # number of rows
+        cols = rnd.randint(3, max_cols)  # number of cols
 
         s = min((image.shape[1] - 1) // cols, (image.shape[0] - 1) // rows)  # size of a cell
 
@@ -441,7 +441,7 @@ class Checkerboard:
         # Warp the grid using an affine transformation and an homography
         # The parameters of the transformations are constrained
         # to get transformations not too far-fetched
-        alpha_affine = np.max(image.shape) * (transform_params[0] + RND.rand() * transform_params[1])
+        alpha_affine = np.max(image.shape) * (transform_params[0] + rnd.rand() * transform_params[1])
         center_square = np.float32(image.shape) // 2
         min_dim = min(image.shape)
         square_size = min_dim // 3
@@ -451,10 +451,10 @@ class Checkerboard:
                            center_square - square_size,
                            [center_square[0] - square_size, center_square[1] + square_size]])
 
-        pts2 = pts1 + RND.uniform(-alpha_affine, alpha_affine, size=pts1.shape).astype(np.float32)
+        pts2 = pts1 + rnd.uniform(-alpha_affine, alpha_affine, size=pts1.shape).astype(np.float32)
         affine_transform = cv2.getAffineTransform(pts1[:3], pts2[:3])
 
-        pts2 = pts1 + RND.uniform(-alpha_affine / 2, alpha_affine / 2, size=pts1.shape).astype(np.float32)
+        pts2 = pts1 + rnd.uniform(-alpha_affine / 2, alpha_affine / 2, size=pts1.shape).astype(np.float32)
         transform = cv2.getPerspectiveTransform(pts1, pts2)
 
         # Apply the affine transformation
@@ -500,15 +500,15 @@ class Checkerboard:
                      (warp_points[(i + 1) * (cols + 1) + j, 0], warp_points[(i + 1) * (cols + 1) + j, 1])]), col)
 
         # Draw lines on the boundaries of the board at random
-        nb_rows = RND.randint(2, rows + 2)
-        nb_cols = RND.randint(2, cols + 2)
+        nb_rows = rnd.randint(2, rows + 2)
+        nb_cols = rnd.randint(2, cols + 2)
 
-        thickness = RND.randint(min_dim * 0.01, min_dim * 0.015)
+        thickness = rnd.randint(min_dim * 0.01, min_dim * 0.015)
 
         for _ in range(nb_rows):
-            row_idx = RND.randint(rows + 1)
-            col_idx1 = RND.randint(cols + 1)
-            col_idx2 = RND.randint(cols + 1)
+            row_idx = rnd.randint(rows + 1)
+            col_idx1 = rnd.randint(cols + 1)
+            col_idx2 = rnd.randint(cols + 1)
             col = get_random_color(background_color)
 
             cv2.line(image,
@@ -519,9 +519,9 @@ class Checkerboard:
                      col, thickness)
 
         for _ in range(nb_cols):
-            col_idx = RND.randint(cols + 1)
-            row_idx1 = RND.randint(rows + 1)
-            row_idx2 = RND.randint(rows + 1)
+            col_idx = rnd.randint(cols + 1)
+            row_idx1 = rnd.randint(rows + 1)
+            row_idx2 = rnd.randint(rows + 1)
             col = get_random_color(background_color)
 
             cv2.line(image,
@@ -555,12 +555,12 @@ class Background:
         image = np.zeros(size, dtype=np.uint8)
 
         cv2.randu(image, 0, 255)
-        cv2.threshold(image, RND.randint(256), 255, cv2.THRESH_BINARY, image)
+        cv2.threshold(image, rnd.randint(256), 255, cv2.THRESH_BINARY, image)
 
         background_color = int(np.mean(image))
 
-        r1 = RND.randint(0, size[1], size=(nb_blobs, 1))
-        r2 = RND.randint(0, size[0], size=(nb_blobs, 1))
+        r1 = rnd.randint(0, size[1], size=(nb_blobs, 1))
+        r2 = rnd.randint(0, size[0], size=(nb_blobs, 1))
 
         blobs = np.concatenate([r1, r2], axis=1)
         dim = max(size)
@@ -572,7 +572,7 @@ class Background:
 
             cv2.circle(image, center, radius, color, -1)
 
-        kernel_size = RND.randint(min_kernel_size, max_kernel_size)
+        kernel_size = rnd.randint(min_kernel_size, max_kernel_size)
         cv2.blur(image, (kernel_size, kernel_size), image)
 
         return image

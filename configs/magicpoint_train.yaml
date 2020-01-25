@@ -1,0 +1,45 @@
+loader:
+  name: 'synthetic'
+  batch_size: 4
+  batches_in_epoch: 1024
+  start_epoch: 1
+  epochs: 200000
+  num_workers: 4
+
+  primitives: [
+    'lines',
+    'polygon',
+    'ellipses',
+    'star',
+    'stripes',
+    'cube',
+    'checkerboard'
+  ]
+  augmentation:
+    enable: true
+    random_brightness: {max_abs_change: 75}
+    random_contrast: {strength_range: [0.3, 1.8]}
+    additive_gaussian_noise: {stddev_range: [0, 15]}
+    additive_speckle_noise: {prob_range: [0, 0.0035]}
+    motion_blur: {max_kernel_size: 7}
+  homography:
+    enable: true
+    patch_ratio: 0.9
+    perspective: true
+    perspective_x: 0.05
+    perspective_y: 0.05
+    scaling: false
+    scale: 0.2
+    translation: false
+    translation_overflow: 0.05
+    rotation: false
+    max_angle: 1.57
+    allow_artifacts: false
+  blur_size: 21
+  size: [120, 160]
+
+
+model:
+    name: 'superpoint'
+    detector: true
+    descriptor: false

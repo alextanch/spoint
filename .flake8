@@ -1,0 +1,5 @@
+[flake8]
+ignore = D203 C901 F401
+max-line-length = 120
+exclude = notebooks/*
+max-complexity = 10

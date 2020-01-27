@@ -2,14 +2,13 @@ import cv2
 import random
 import numpy as np
 
-import tensorflow as tf
-
 
 class Augmentation:
     def __init__(self, config, size=(120, 160)):
         self.compose = Compose([
             Resize(size),
-            GaussianNoise(**config.gaussian_noise) if 'gaussian_noise' in config else None
+            GaussianNoise(**config.gaussian_noise) if 'gaussian_noise' in config else None,
+            SpeckleNoise(**config.speckle_noise) if 'speckle_noise' in config else None
         ])
 
     def __call__(self, image):
@@ -44,9 +43,28 @@ class GaussianNoise:
         self.stddev = stddev
 
     def __call__(self, image):
-        stddev = np.random.uniform(*self.stddev)
-        noise = np.random.normal(0, stddev, image.shape)
-        image = np.clip(image + noise, 0, 255)
+        if random.random() < self.prob:
+            stddev = np.random.uniform(*self.stddev)
+            noise = np.random.normal(0, stddev, image.shape)
+            image = np.clip(image + noise, 0, 255)
 
         return image.astype(np.uint8)
+
+
+class SpeckleNoise:
+    def __init__(self, prob=0.5, stddev=(.0, .005)):
+        self.prob = prob
+        self.stddev = stddev
+
+    def __call__(self, image):
+        noisy_image = image
+
+        if random.random() < self.prob:
+            p = np.random.uniform(*self.stddev)
+            sample = np.random.uniform(size=image.shape)
+            noisy_image = np.where(sample <= p, np.zeros_like(image), image)
+            noisy_image = np.where(sample >= (1. - p), 255. * np.ones_like(image), noisy_image)
+
+        return noisy_image.astype(np.uint8)
+
 

@@ -24,8 +24,8 @@ loader:
 
   augmentation:
     gaussian_noise: {prob: 0.5, stddev: [0.5, 0.95]}
-    speckle_noise: {prob: 1, stddev: [.0, .005]}
-
+    speckle_noise: {prob: 0.5, stddev: [.0, .005]}
+    random_brightness: {prob: 1, max_change: 50}
 
 model:
     name: 'superpoint'

@@ -6,7 +6,7 @@ setup(
     license='MIT',
     packages=find_packages(exclude=['tests', 'notebooks']),
     description='SuperPoint PyTorch implementation',
-    url='https://github.com/BillMills/python-package-example',
+    url='https://github.com/alextanch/spoint',
     author='Alexander Tanchenko',
     author_email='aletan@protonmail.com',
     install_requires=[

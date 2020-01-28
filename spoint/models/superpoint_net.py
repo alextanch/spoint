@@ -92,9 +92,9 @@ class SuperPointNet(torch.nn.Module):
         x = self.encoder(x)
 
         # detector head
-        dets = self.detector(x) if self.detector else None
+        dets = None if (self.detector is None) else self.detector(x)
 
         # descriptor head
-        desc = self.descriptor(x) if self.descriptor else None
+        desc = None if (self.descriptor is None) else self.descriptor(x)
 
         return dets, desc

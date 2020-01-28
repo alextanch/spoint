@@ -1,5 +1,3 @@
-import random
-
 import cv2
 import numpy as np
 from scipy.stats import truncnorm
@@ -74,7 +72,7 @@ class Perspective:
         self.artifacts = artifacts
 
     def __call__(self, points):
-        if random.random() < self.prob:
+        if np.random.rand() < self.prob:
             dx = self.dx
             dy = self.dy
 
@@ -101,7 +99,7 @@ class Rotation:
         self.prob = prob
 
     def __call__(self, points):
-        if random.random() < self.prob:
+        if np.random.rand() < self.prob:
             angles = np.linspace(-self.max_angle, self.max_angle, num=self.num_angles)
             angles = np.concatenate((angles, np.array([0.])), axis=0)
 

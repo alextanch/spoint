@@ -2,13 +2,12 @@ import torch.nn as nn
 
 
 class SuperPointLoss(nn.Module):
-    def __init__(self, config, device):
+    def __init__(self, config):
         super().__init__()
 
         self.config = config
-        self.device = device
 
-        self.bce_loss = nn.BCELoss(reduction='none').to(self.device)
+        self.bce_loss = nn.BCELoss(reduction='none')
 
     def detector_loss(self, input, target, mask):
         soft_max = nn.functional.softmax(input, dim=1)

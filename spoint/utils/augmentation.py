@@ -22,7 +22,7 @@ class Compose:
 
     def __call__(self, image):
         for t in self.transforms:
-            image = t(image) if t else image
+            image = image if (t is None) else t(image)
 
         return image
 

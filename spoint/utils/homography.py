@@ -15,7 +15,7 @@ class Homography:
         self.compose = Compose([
             Patch(**config.patch) if 'patch' in config else None,
             Perspective(**config.perspective) if 'perspective' in config else None,
-            Rotation(**config.rotation) if 'rotation' in config else None,
+            Rotation(**config.rotation) if 'rotation' in config else None
         ], size)
 
         h, w = size
@@ -49,7 +49,7 @@ class Compose:
         points2 = points1
 
         for t in self.transforms:
-            points2 = t(points2) if t else points2
+            points2 = points2 if (t is None) else t(points2)
 
         return cv2.getPerspectiveTransform(points1, points2)
 

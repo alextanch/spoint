@@ -26,7 +26,7 @@ class Compose:
         for t in self.transforms:
             image = image if (t is None) else t(image)
 
-        return image
+        return image.astype(np.uint8)
 
 
 class Resize:
@@ -51,7 +51,7 @@ class GaussianNoise:
             noise = np.random.normal(0, stddev, image.shape)
             image = np.clip(image + noise, 0, 255)
 
-        return image.astype(np.uint8)
+        return image
 
 
 class SpeckleNoise:
@@ -69,7 +69,7 @@ class SpeckleNoise:
             noisy_image = np.where(sample <= p, np.zeros_like(image), image)
             noisy_image = np.where(sample >= (1. - p), 255. * np.ones_like(image), noisy_image)
 
-        return noisy_image.astype(np.uint8)
+        return noisy_image
 
 
 class RandomBrightness:
@@ -82,7 +82,7 @@ class RandomBrightness:
             factor = np.random.uniform(-self.max_change, self.max_change)
             image = np.clip(image + factor, 0, 255)
 
-        return image.astype(np.uint8)
+        return image
 
 
 class RandomContrast:
@@ -96,7 +96,7 @@ class RandomContrast:
             mean = image.mean()
             image = np.clip((image - mean) * factor + mean, 0, 255)
 
-        return image.astype(np.uint8)
+        return image
 
 
 class AdditiveShade:
@@ -135,7 +135,7 @@ class AdditiveShade:
                 mask = cv2.GaussianBlur(mask, (ksize, ksize), 0)
                 image = np.clip(image * (1 - transparency * mask), 0, 255)
 
-        return image.astype(np.uint8)
+        return image
 
 
 class MotionBlur:
@@ -170,7 +170,7 @@ class MotionBlur:
 
             image = np.clip(cv2.filter2D(image, -1, kernel), 0, 255)
 
-        return image.astype(np.uint8)
+        return image
 
 
 # def random_brightness(image, max_abs_change=50):

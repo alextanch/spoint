@@ -7,40 +7,54 @@ import torch.nn.functional as F
 
 
 class Homography:
-    def __init__(self, config, size=(960, 1280)):
-        self.size = size
-
+    def __init__(self, config):
         self.compose = Compose([
             Patch(**config.patch) if 'patch' in config else None,
             Perspective(**config.perspective) if 'perspective' in config else None,
-            Rotation(**config.rotation) if 'rotation' in config else None
-        ], size)
+            Rotation(**config.rotation) if 'rotation' in config else None,
+            Scaling(**config.scaling) if 'scaling' in config else None,
+            Translation(**config.translation) if 'translation' in config else None])
 
-        h, w = size
-        y, x = np.meshgrid(np.linspace(-1, 1, w), np.linspace(-1, 1, h))
-
-        self.grid = np.stack((y, x, np.ones((h, w))), axis=2).reshape(-1, 3)
+        self.grid = None
 
     def __call__(self, image, points):
+        h, w = image.shape[:2]
+
+        if self.grid is None:
+            y, x = np.meshgrid(np.linspace(-1, 1, w), np.linspace(-1, 1, h))
+            self.grid = np.stack((y, x, np.ones((h, w))), axis=2).reshape(-1, 3)
+
         H = self.compose()
 
+        # warp image
         grid = (self.grid @ np.linalg.inv(H).T)[:, :2]
-
-        h, w = self.size
-
         grid = torch.from_numpy(grid).view([1, h, w, 2]).float()
+
         image = torch.tensor(image, dtype=torch.float32).view(1, 1, h, w)
 
         image = F.grid_sample(image, grid, mode='bilinear', align_corners=True)
         image = image.squeeze().numpy().astype(np.uint8)
 
+        # warp points
+        points = points.astype(np.float)
+
+        S = np.array([[0, 2. / w, -1], [2. / h, 0, -1], [0, 0, 1]])
+        S = np.linalg.inv(S) @ H @ S
+
+        points = np.column_stack((points, np.ones(len(points))))
+        points = (points @ S.T)[:, :2]
+
+        mask = (0 <= points) * (points < image.shape)
+        mask = np.prod(mask, axis=1) == 1
+
+        points = points[mask].astype(np.int)
+
         return image, points
 
 
 class Compose:
-    def __init__(self, transforms, size):
+    def __init__(self, transforms):
         self.transforms = transforms
-        self.size = size
 
     def __call__(self):
         points1 = np.stack([[-1, -1], [-1, 1], [1, -1], [1, 1]], axis=0).astype(np.float32)
@@ -49,7 +63,7 @@ class Compose:
         for t in self.transforms:
             points2 = points2 if (t is None) else t(points2)
 
-        return cv2.getPerspectiveTransform(points1, points2)
+        return cv2.getPerspectiveTransform(points1.astype(np.float32), points2.astype(np.float32))
 
 
 class Patch:
@@ -60,7 +74,7 @@ class Patch:
         center = np.mean(points, axis=0, keepdims=True)
         points = (points - center) * self.ratio + center
 
-        return points.astype(np.float32)
+        return points
 
 
 class Perspective:
@@ -101,7 +115,7 @@ class Rotation:
     def __call__(self, points):
         if np.random.rand() < self.prob:
             angles = np.linspace(-self.max_angle, self.max_angle, num=self.num_angles)
-            angles = np.concatenate((angles, np.array([0.])), axis=0)
+            angles = np.concatenate((np.array([0]), angles), axis=0)
 
             center = np.mean(points, axis=0, keepdims=True)
 
@@ -111,13 +125,61 @@ class Rotation:
             rotated = np.matmul((points - center)[np.newaxis, :, :], rot_mat) + center
 
             if self.artifacts:
-                valid = np.arange(self.num_angles)
+                ids = np.arange(self.num_angles)
             else:
-                valid = (rotated > -1) * (rotated < 1.)
-                valid = valid.prod(axis=1).prod(axis=1)
-                valid = np.where(valid)[0]
+                ids = (-1 < rotated) * (rotated < 1)
+                ids = np.where(ids.prod(axis=1).prod(axis=1))[0]
 
-            idx = valid[np.random.randint(valid.shape[0], size=1)].squeeze().astype(int)
-            points = rotated[idx, :, :]
+            points = rotated[np.random.choice(ids) if ids.size else 0]
 
-        return points.astype(np.float32)
+        return points
+
+
+class Scaling:
+    def __init__(self, prob=0.5, scale=0.1, num_scales=5, std=2, artifacts=False):
+        self.prob = prob
+        self.scale = scale
+        self.num_scales = num_scales
+        self.std = std
+        self.artifacts = artifacts
+
+    def __call__(self, points):
+        if np.random.rand() < self.prob:
+            scales = truncnorm(-self.std, self.std, loc=1, scale=self.scale / 2).rvs(self.num_scales)
+            scales = np.concatenate((np.array([1]), scales), axis=0)
+
+            center = np.mean(points, axis=0, keepdims=True)
+            scaled = (points - center)[np.newaxis, :, :] * scales[:, np.newaxis, np.newaxis] + center
+
+            if self.artifacts:
+                ids = np.arange(self.num_scales)
+            else:
+                ids = (-1 < scaled) * (scaled < 1)
+                ids = np.where(ids.prod(axis=1).prod(axis=1))[0]
+
+            points = scaled[np.random.choice(ids) if ids.size else 0]
+
+        return points
+
+
+class Translation:
+    def __init__(self, prob=0.5, overflow=0, artifacts=False):
+        self.prob = prob
+        self.overflow = overflow
+        self.artifacts = artifacts
+
+    def __call__(self, points):
+        if np.random.rand() < self.prob:
+            dx1, dy1 = 1 + points.min(axis=0)
+            dx2, dy2 = 1 - points.max(axis=0)
+
+            dx = np.random.uniform(-dx1, dx2, 1)
+            dy = np.random.uniform(-dy1, dy2, 1)
+
+            if self.artifacts:
+                dx += self.overflow
+                dy += self.overflow
+
+            points += np.array([dx, dy]).T
+
+        return points

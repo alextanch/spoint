@@ -2,10 +2,27 @@ import cv2
 import numpy as np
 
 
+class Resize:
+    def __init__(self, size=(120, 160)):
+        self.size = size
+
+    def __call__(self, image, points):
+        h, w = self.size
+        H, W = image.shape[:2]
+
+        image = cv2.resize(image, (w, h), interpolation=cv2.INTER_LINEAR)
+
+        points = points.astype(np.float)
+
+        points[:, 0] = (h * points[:, 0]) / H
+        points[:, 1] = (w * points[:, 1]) / W
+
+        return image, points.astype(np.int)
+
+
 class Augmentation:
-    def __init__(self, config, size=(120, 160)):
+    def __init__(self, config):
         self.compose = Compose([
-            Resize(size),
             GaussianNoise(**config.gaussian_noise) if 'gaussian_noise' in config else None,
             SpeckleNoise(**config.speckle_noise) if 'speckle_noise' in config else None,
             RandomBrightness(**config.random_brightness) if 'random_brightness' in config else None,
@@ -27,17 +44,6 @@ class Compose:
             image = image if (t is None) else t(image)
 
         return image.astype(np.uint8)
-
-
-class Resize:
-    def __init__(self, size=(120, 160)):
-        self.size = size
-
-    def __call__(self, image):
-        h, w = self.size
-        image = cv2.resize(image, (w, h), interpolation=cv2.INTER_LINEAR)
-
-        return image
 
 
 class GaussianNoise:
@@ -171,12 +177,3 @@ class MotionBlur:
             image = np.clip(cv2.filter2D(image, -1, kernel), 0, 255)
 
         return image
-
-
-# def random_brightness(image, max_abs_change=50):
-#     import tensorflow as tf
-#     return tf.clip_by_value(tf.image.random_brightness(image, max_abs_change), 0, 255)
-#     sess = tf.Session()
-#     with sess.as_default():
-#         _img = img.val()
-

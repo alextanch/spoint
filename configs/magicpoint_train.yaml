@@ -21,6 +21,8 @@ loader:
     patch: {ratio: 0.5}
     perspective: {prob: 0.5, dx: 0.05, dy: 0.05, artifacts: False}
     rotation: {prob: 0.5, max_angle: 1.57, num_angles: 10, artifacts: False}
+    scaling: {prob: 0.5, scale: 0.1, num_scales: 5, std: 2, artifacts: False}
+    translation: {prob: 0.5, overflow: 0, artifacts: False}
 
   augmentation:
     gaussian_noise: {prob: 0.5, stddev: [.5, .95]}

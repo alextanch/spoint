@@ -377,12 +377,10 @@ class Cube:
                             [0, scale_interval[0] + np.random.rand() * scale_interval[1], 0],
                             [0, 0, scale_interval[0] + np.random.rand() * scale_interval[1]]])
 
-        trans = np.array([image.shape[1] * trans_interval[0] +
-                          np.random.randint(-image.shape[1] * trans_interval[1],
-                                            image.shape[1] * trans_interval[1]),
-                          image.shape[0] * trans_interval[0] +
-                          np.random.randint(-image.shape[0] * trans_interval[1],
-                                            image.shape[0] * trans_interval[1]), 0])
+        a = np.random.randint(-image.shape[1] * trans_interval[1], image.shape[1] * trans_interval[1])
+        b = np.random.randint(-image.shape[0] * trans_interval[1], image.shape[0] * trans_interval[1])
+
+        trans = np.array([image.shape[1] * trans_interval[0] + a, image.shape[0] * trans_interval[0] + b, 0])
 
         cube = trans + np.transpose(
             np.dot(scaling, np.dot(rotation_1, np.dot(rotation_2, np.dot(rotation_3, np.transpose(cube))))))
@@ -407,7 +405,8 @@ class Cube:
 
         for i in [0, 1, 2]:
             for j in [0, 1, 2, 3]:
-                col_edge = (col_face + 128 + np.random.randint(-64, 64)) % 256  # color that constrats with the face color
+                # color that constrats with the face color
+                col_edge = (col_face + 128 + np.random.randint(-64, 64)) % 256
                 cv2.line(image,
                          (cube[faces[i][j], 0], cube[faces[i][j], 1]),
                          (cube[faces[i][(j + 1) % 4], 0], cube[faces[i][(j + 1) % 4], 1]), col_edge, thickness)
@@ -601,6 +600,7 @@ class Primitives:
 
             if name in self.PRIMITIVES:
                 image, points = self.PRIMITIVES[name](image)
+                points[:, [0, 1]] = points[:, [1, 0]]
             else:
                 raise NotImplementedError(f'Not implemented primitive: {name}')
 

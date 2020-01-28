@@ -77,7 +77,7 @@ class RandomBrightness:
 
     def __call__(self, image):
         if random.random() < self.prob:
-            value = np.random.uniform(-self.max_change,  self.max_change)
+            value = np.random.uniform(-self.max_change, self.max_change)
             image = np.clip(image + value, 0, 255)
 
         return image.astype(np.uint8)
@@ -89,5 +89,3 @@ class RandomBrightness:
 #     sess = tf.Session()
 #     with sess.as_default():
 #         _img = img.val()
-
-

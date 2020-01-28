@@ -85,8 +85,8 @@ class Perspective:
                 dx = min(min(dx1, self.dx), dx2)
                 dy = min(min(dy1, self.dy), dy2)
 
-            dx = truncnorm(-self.std, self.std, loc=0, scale=dx/2).rvs(1)
-            dy = truncnorm(-self.std, self.std, loc=0, scale=dy/2).rvs(1)
+            dx = truncnorm(-self.std, self.std, loc=0, scale=dx / 2).rvs(1)
+            dy = truncnorm(-self.std, self.std, loc=0, scale=dy / 2).rvs(1)
 
             points += np.array([[dx, dy], [dx, -dy], [-dx, dy], [-dx, -dy]]).squeeze()
 
@@ -123,4 +123,3 @@ class Rotation:
             points = rotated[idx, :, :]
 
         return points.astype(np.float32)
-

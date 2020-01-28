@@ -24,4 +24,11 @@ class SyntheticDataSet(data.Dataset):
         image = self.augmentation(image)
         wrap_image, wrap_points = self.homography(image, points)
 
-        return torch.from_numpy(image)
+        sample = {
+            'image': torch.from_numpy(image),
+            'points': torch.from_numpy(points),
+            'wrap_image': torch.from_numpy(wrap_image),
+            'wrap_points': torch.from_numpy(wrap_points),
+        }
+
+        return sample

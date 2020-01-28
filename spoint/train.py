@@ -5,7 +5,7 @@ import argparse
 from tqdm import tqdm
 
 from spoint.utils.config import Config
-from spoint.datasets.loader import Loader
+from spoint.datasets.loader import DataLoader
 
 
 def train(epoch, loader):
@@ -19,7 +19,7 @@ def main(config):
     logging.info('running train')
 
     logging.info('get loader')
-    loader = Loader(config['loader'])
+    loader = DataLoader(config['loader'])
 
     for epoch in range(loader.start_epoch, loader.epochs):
         train(epoch, loader)

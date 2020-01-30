@@ -25,13 +25,13 @@ class Homography:
         self.grid = np.stack((y, x, np.ones((height, width))), axis=2).reshape(-1, 3)
 
     def __call__(self, image, points):
-        def draw_points(image, points, file):
-            image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-
-            for p in points:
-                image = cv2.circle(image, (p[0], p[1]), 4, (0, 0, 255), -1)
-
-            cv2.imwrite(file, image)
+        # def draw_points(image, points, file):
+        #     image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+        #
+        #     for p in points:
+        #         image = cv2.circle(image, (p[0], p[1]), 4, (0, 0, 255), -1)
+        #
+        #     cv2.imwrite(file, image)
 
         h, w = image.shape[:2]
         self.init_grid(h, w)
@@ -39,7 +39,7 @@ class Homography:
         # generate homography
         H = self.compose()
 
-        draw_points(image, points, 'src.png')
+        #draw_points(image, points, 'src.png')
 
         # warp image
         grid = (self.grid @ np.linalg.inv(H).T)[:, :2]
@@ -61,7 +61,7 @@ class Homography:
         mask = np.prod((0 <= points1) * (points1 < (w, h)), axis=1) == 1
         points2 = points1[mask].astype(np.int)
 
-        draw_points(image, points2, 'dst.png')
+        #draw_points(image, points2, 'dst.png')
 
         return image, points2, H
 

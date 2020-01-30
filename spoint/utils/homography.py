@@ -17,14 +17,29 @@ class Homography:
 
         self.grid = None
 
+    def init_grid(self, height, width):
+        if not (self.grid is None):
+            return
+
+        y, x = np.meshgrid(np.linspace(-1, 1, width), np.linspace(-1, 1, height))
+        self.grid = np.stack((y, x, np.ones((height, width))), axis=2).reshape(-1, 3)
+
     def __call__(self, image, points):
+        def draw_points(image, points, file):
+            image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+
+            for p in points:
+                image = cv2.circle(image, (p[0], p[1]), 4, (0, 0, 255), -1)
+
+            cv2.imwrite(file, image)
+
         h, w = image.shape[:2]
+        self.init_grid(h, w)
 
-        if self.grid is None:
-            y, x = np.meshgrid(np.linspace(-1, 1, w), np.linspace(-1, 1, h))
-            self.grid = np.stack((y, x, np.ones((h, w))), axis=2).reshape(-1, 3)
-
+        # generate homography
         H = self.compose()
+
+        draw_points(image, points, 'src.png')
 
         # warp image
         grid = (self.grid @ np.linalg.inv(H).T)[:, :2]
@@ -36,20 +51,19 @@ class Homography:
         image = image.squeeze().numpy().astype(np.uint8)
 
         # warp points
-        points = points.astype(np.float)
-
-        S = np.array([[0, 2. / w, -1], [2. / h, 0, -1], [0, 0, 1]])
+        S = np.array([[2. / w, 0, -1], [0, 2. / h, -1], [0, 0, 1]])
         S = np.linalg.inv(S) @ H @ S
 
         points = np.column_stack((points, np.ones(len(points))))
-        points = (points @ S.T)[:, :2]
+        points1 = (points @ S.T)
+        points1 = points1[:, :2] / points1[:, 2:]
 
-        mask = (0 <= points) * (points < image.shape)
-        mask = np.prod(mask, axis=1) == 1
+        mask = np.prod((0 <= points1) * (points1 < (w, h)), axis=1) == 1
+        points2 = points1[mask].astype(np.int)
 
-        points = points[mask].astype(np.int)
+        draw_points(image, points2, 'dst.png')
 
-        return image, points
+        return image, points2, H
 
 
 class Compose:
@@ -57,13 +71,15 @@ class Compose:
         self.transforms = transforms
 
     def __call__(self):
-        points1 = np.stack([[-1, -1], [-1, 1], [1, -1], [1, 1]], axis=0).astype(np.float32)
+        points1 = np.stack([[-1, -1], [-1, 1], [1, 1], [1, -1]], axis=0).astype(np.float32)
         points2 = points1
 
         for t in self.transforms:
             points2 = points2 if (t is None) else t(points2)
 
-        return cv2.getPerspectiveTransform(points1.astype(np.float32), points2.astype(np.float32))
+        H = cv2.getPerspectiveTransform(np.float32(points1), np.float32(points2))
+
+        return H
 
 
 class Patch:
@@ -100,7 +116,7 @@ class Perspective:
             dx = truncnorm(-self.std, self.std, loc=0, scale=dx / 2).rvs(1)
             dy = truncnorm(-self.std, self.std, loc=0, scale=dy / 2).rvs(1)
 
-            points += np.array([[dx, dy], [dx, -dy], [-dx, dy], [-dx, -dy]]).squeeze()
+            points += np.array([[dy, dx], [dy, -dx], [-dy, dx], [-dy, -dx]]).squeeze()
 
         return points
 
@@ -180,6 +196,6 @@ class Translation:
                 dx += self.overflow
                 dy += self.overflow
 
-            points += np.array([dx, dy]).T
+            points += np.array([dy, dx]).T
 
         return points

@@ -20,15 +20,16 @@ class SyntheticDataSet(data.Dataset):
 
     def __getitem__(self, index):
         image, points = self.primitives()
-        image, points = self.resize(image, points)
+        #image, points = self.resize(image, points)
         image = self.augmentation(image)
-        wrap_image, wrap_points = self.homography(image, points)
+        wrap_image, wrap_points, H = self.homography(image, points)
 
         sample = {
             'image': torch.from_numpy(image),
             'points': torch.from_numpy(points),
             'wrap_image': torch.from_numpy(wrap_image),
             'wrap_points': torch.from_numpy(wrap_points),
+            'homography': torch.from_numpy(H)
         }
 
         return sample

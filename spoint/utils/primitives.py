@@ -10,7 +10,7 @@ def get_random_color(background_color):
 
     color = np.random.randint(256)
 
-    if abs(color - background_color) < 30:  # not enough contrast
+    if abs(color - background_color) < 60:  # not enough contrast
         color = (color + 128) % 256
 
     return color
@@ -46,7 +46,7 @@ class Lines:
         Parameters: nb_lines: maximal number of lines
     """
 
-    def __call__(self, image, nb_lines=10):
+    def __call__(self, image, background_color, nb_lines=10):
         def intersect(a, b, c, d, dim):
             """ Return true if line segments AB and CD intersect """
 
@@ -66,7 +66,6 @@ class Lines:
         num_lines = np.random.randint(1, nb_lines)
         segments = np.empty((0, 4), dtype=np.int)
         points = np.empty((0, 2), dtype=np.int)
-        background_color = int(np.mean(image))
         min_dim = min(image.shape)
 
         for i in range(num_lines):
@@ -100,7 +99,7 @@ class Polygon:
         Parameters: max_sides: maximal number of sides + 1
     """
 
-    def __call__(self, image, max_sides=8):
+    def __call__(self, image, background_color, max_sides=8):
         def angle_between_vectors(v1, v2):
             """ Compute the angle (in rad) between the two vectors v1 and v2. """
             v1_u = v1 / np.linalg.norm(v1)
@@ -140,7 +139,7 @@ class Polygon:
             return self(image, max_sides)
 
         corners = points.reshape((-1, 1, 2))
-        col = get_random_color(int(np.mean(image)))
+        col = get_random_color(background_color)
 
         cv2.fillPoly(image, [corners], col)
 
@@ -152,12 +151,10 @@ class Ellipses:
         Parameters: nb_ellipses: maximal number of ellipses
     """
 
-    def __call__(self, image, nb_ellipses=20):
+    def __call__(self, image, background_color, nb_ellipses=20):
         centers = np.empty((0, 2), dtype=np.int)
         rads = np.empty((0, 1), dtype=np.int)
         min_dim = min(image.shape[0], image.shape[1]) / 4
-
-        background_color = int(np.mean(image))
 
         for i in range(nb_ellipses):
             ax = int(max(np.random.rand() * min_dim, min_dim / 5))
@@ -192,7 +189,7 @@ class Star:
         Parameters: nb_branches: number of branches of the star
     """
 
-    def __call__(self, image, nb_branches=6):
+    def __call__(self, image, background_color, nb_branches=6):
         num_branches = np.random.randint(3, nb_branches)
         min_dim = min(image.shape[0], image.shape[1])
 
@@ -210,11 +207,13 @@ class Star:
                             int(y + max(np.random.rand(), 0.3) * rad * np.sin(a))] for a in angles])
 
         points = np.concatenate(([[x, y]], points), axis=0)
-        background_color = int(np.mean(image))
+
+        x0, y0 = points[0][0], points[0][1]
 
         for i in range(1, num_branches + 1):
+            x1, y1 = points[i][0], points[i][1]
             col = get_random_color(background_color)
-            cv2.line(image, (points[0][0], points[0][1]), (points[i][0], points[i][1]), col, thickness)
+            cv2.line(image, (x0, y0), (x1, y1), col, thickness)
 
         return image, points
 
@@ -227,9 +226,7 @@ class Stripes:
             transform_params: set the range of the parameters of the transformations
     """
 
-    def __call__(self, image, max_nb_cols=13, min_width_ratio=0.04, transform_params=(0.1, 0.1)):
-        background_color = int(np.mean(image))
-
+    def __call__(self, image, background_color, max_nb_cols=13, min_width_ratio=0.04, transform_params=(0.1, 0.1)):
         # Create the grid
         board_size = (int(image.shape[0] * (1 + np.random.rand())), int(image.shape[1] * (1 + np.random.rand())))
         col = np.random.randint(5, max_nb_cols)  # number of cols
@@ -335,13 +332,12 @@ class Cube:
                               img.shape*(trans_interval[0] + trans_interval[1])
     """
 
-    def __call__(self, image, min_size_ratio=0.2,
+    def __call__(self, image, background_color, min_size_ratio=0.2,
                  min_angle_rot=np.pi / 10, scale_interval=(0.4, 0.6),
                  trans_interval=(0.5, 0.2)):
         # Generate a cube and apply to it an affine transformation
         # The order matters!
         # The indices of two adjacent vertices differ only of one bit (as in Gray codes)
-        background_color = int(np.mean(image))
 
         min_dim = min(image.shape[:2])
         min_side = min_dim * min_size_ratio
@@ -425,8 +421,7 @@ class Checkerboard:
               transform_params: set the range of the parameters of the transformations
     """
 
-    def __call__(self, image, max_rows=7, max_cols=7, transform_params=(0.05, 0.15)):
-        background_color = int(np.mean(image))
+    def __call__(self, image, background_color, max_rows=7, max_cols=7, transform_params=(0.05, 0.15)):
         # Create the grid
         rows = np.random.randint(3, max_rows)  # number of rows
         cols = np.random.randint(3, max_cols)  # number of cols
@@ -547,7 +542,6 @@ class Background:
               min_kernel_size: minimal size of the kernel
               max_kernel_size: maximal size of the kernel
             """
-
     def __call__(self, size=(960, 1280), nb_blobs=100,
                  min_rad_ratio=0.02, max_rad_ratio=0.031,
                  min_kernel_size=150, max_kernel_size=500):
@@ -555,7 +549,7 @@ class Background:
         image = np.zeros(size, dtype=np.uint8)
 
         cv2.randu(image, 0, 255)
-        cv2.threshold(image, np.random.randint(256), 255, cv2.THRESH_BINARY, image)
+        cv2.threshold(image, np.random.randint(256), 255, 0, image)
 
         background_color = int(np.mean(image))
 
@@ -594,13 +588,17 @@ class Primitives:
 
     def __call__(self):
         try:
-            image = Background()()
+            if 'background' in self.config:
+                image = Background()(**self.config.background)
+            else:
+                image = Background()()
 
-            name = np.random.choice(self.config)
+            background_color = int(np.mean(image))
+
+            name = np.random.choice(self.config.primitives)
 
             if name in self.PRIMITIVES:
-                image, points = self.PRIMITIVES[name](image)
-                points[:, [0, 1]] = points[:, [1, 0]]
+                image, points = self.PRIMITIVES[name](image, background_color)
             else:
                 raise NotImplementedError(f'Not implemented primitive: {name}')
 

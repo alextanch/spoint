@@ -117,7 +117,7 @@ class AdditiveShade:
             size = image.shape[:2]
 
             min_dim = min(size) / 4
-            mask = np.zeros(size, np.float32)
+            mask = np.zeros(size, np.uint8)
 
             for i in range(self.ellipses):
                 ax = int(max(np.random.rand() * min_dim, min_dim / 5))
@@ -130,16 +130,19 @@ class AdditiveShade:
 
                 angle = np.random.rand() * 90
 
-                cv2.ellipse(mask, (x, y), (ax, ay), angle, 0, 360, 1, -1)
+                cv2.ellipse(mask, (x, y), (ax, ay), angle, 0, 360, 255, -1)
 
-                transparency = np.random.uniform(*self.transparency)
                 ksize = np.random.randint(*self.ksize)
 
                 if (ksize % 2) == 0:
                     ksize += 1
 
                 mask = cv2.GaussianBlur(mask, (ksize, ksize), 0)
-                image = np.clip(image * (1 - transparency * mask), 0, 255)
+
+                alpha = np.random.uniform(*self.transparency)
+
+                image = cv2.addWeighted(image.astype(np.uint8), alpha, mask, 1 - alpha, 0.0)
+                #image = np.clip(image * (1 - transparency * mask), 0, 255)
 
         return image
 
